@@ -30,7 +30,11 @@ public class ClientHandler {
 
     public void handlerMethod() {
         handlerThread = new Thread(() -> {
-            authorize();
+            try {
+                authorize();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
             while (!Thread.currentThread().isInterrupted() && socket.isConnected()){
                 try{
                     var message = in.readUTF();
@@ -57,7 +61,12 @@ public class ClientHandler {
         }
     }
 
-    private void authorize(){
+    private void authorize() throws IOException {
+        long t_start = 0;
+        long t_end = 0;
+        long t_delay = 5000;
+        t_start = System.currentTimeMillis();
+        t_end = t_start + t_delay;
         while (true){
             try {
                 var message = in.readUTF();
@@ -84,6 +93,12 @@ public class ClientHandler {
                 }
             } catch (IOException e) {
                 e.printStackTrace();
+            }
+            if(t_end <= System.currentTimeMillis()){
+                t_start = 0;
+                System.out.println("Time is delay!!!!!!!");
+                socket.close();
+                return;
             }
         }
     }
