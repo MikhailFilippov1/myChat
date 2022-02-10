@@ -15,6 +15,7 @@ public class ClientHandler {
     private Thread handlerThread;
     private MySimpleMulticlientServer server;
     private String user;
+    private Thread checkAuthThread;
 
     public ClientHandler(Socket socket, MySimpleMulticlientServer server) {
         try {
@@ -32,7 +33,7 @@ public class ClientHandler {
         handlerThread = new Thread(() -> {
             try {
                 authorize();
-            } catch (IOException e) {
+            } catch (InterruptedException | IOException e) {
                 e.printStackTrace();
             }
             while (!Thread.currentThread().isInterrupted() && socket.isConnected()){
@@ -61,12 +62,10 @@ public class ClientHandler {
         }
     }
 
-    private void authorize() throws IOException {
-        long t_start = 0;
-        long t_end = 0;
-        long t_delay = 5000;
-        t_start = System.currentTimeMillis();
-        t_end = t_start + t_delay;
+    private void authorize() throws InterruptedException, IOException {
+        var authThread = new Thread();
+        authThread.start();
+        Thread.sleep(10000);
         while (true){
             try {
                 var message = in.readUTF();
@@ -94,11 +93,12 @@ public class ClientHandler {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            if(t_end <= System.currentTimeMillis()){
-                t_start = 0;
-                System.out.println("Time is delay!!!!!!!");
+            if(Thread.currentThread().isAlive()) {
+                authThread.interrupt();
                 socket.close();
-                return;
+                handlerThread.interrupt();
+                System.out.println("Time is delay... Client is disconnect...");
+                break;
             }
         }
     }
