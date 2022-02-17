@@ -6,6 +6,9 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.sql.SQLException;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class ClientHandler {
 
@@ -15,7 +18,6 @@ public class ClientHandler {
     private Thread handlerThread;
     private MySimpleMulticlientServer server;
     private String user;
-    private Thread checkAuthThread;
 
     public ClientHandler(Socket socket, MySimpleMulticlientServer server) {
         try {
@@ -31,12 +33,10 @@ public class ClientHandler {
 
     public void handlerMethod() {
         handlerThread = new Thread(() -> {
-            try {
-                authorize();
-            } catch (InterruptedException | IOException e) {
-                e.printStackTrace();
-            }
-            while (!Thread.currentThread().isInterrupted() && socket.isConnected()){
+
+            authorize();
+
+            while (!Thread.currentThread().isInterrupted() && !socket.isClosed()){
                 try{
                     var message = in.readUTF();
                     handleMessage(message);
@@ -50,57 +50,76 @@ public class ClientHandler {
 
     private void handleMessage(String message) {
         var splitMessage = message.split(MySimpleMulticlientServer.REGEX);
-        switch (splitMessage[0]){
-            case "/broadcast" :
+        switch (splitMessage[0]) {
+            case "/broadcast":
                 server.broadcastMessage(user, splitMessage[1]);
                 break;
-            case "/w" :
+            case "/w":
                 var recepient = splitMessage[1];
                 var mess = recepient + MySimpleMulticlientServer.REGEX + splitMessage[2];
                 server.privateMessage(user, mess);
                 break;
+            case "/nick":
+                try {
+                    server.getAuthService().changeNick(getUserNick(), splitMessage[1]);
+                } catch (WrongCredentialsException | SQLException e) {
+                    e.printStackTrace();
+                }
+                this.user = splitMessage[1];
+                server.setAuthorizedClientToList(this);
+                send("/nick_ok" + MySimpleMulticlientServer.REGEX + splitMessage[1]);
+                break;
         }
     }
 
-    private void authorize() throws InterruptedException, IOException {
-        var authThread = new Thread();
-        authThread.start();
-        Thread.sleep(10000);
-        while (true){
-            try {
-                var message = in.readUTF();
-                if(message.startsWith("/auth")){
-                    var parsedAuthMessage = message.split(MySimpleMulticlientServer.REGEX);
-                    var response = "";      // Почему именно такое название, а не responce , например?
-                    String nickName = null;
+    private void authorize() {
+        var timer = new Timer(true);
+            timer.schedule(new TimerTask() {
+                @Override
+                public void run() {
                     try {
-                        nickName = server.getAuthService().authorizeUserByLoginAndPassword(parsedAuthMessage[1], parsedAuthMessage[2]);
-                    } catch (WrongCredentialsException e) {
-                        response = "/error" + MySimpleMulticlientServer.REGEX + e.getMessage();
+                        if (user == null) {
+                            send("/error" + MySimpleMulticlientServer.REGEX + "Authentication timeout!\nPlease, try again later!");
+                            Thread.sleep(50);
+                            socket.close();
+                            handlerThread.interrupt();
+                            System.out.println("Connection with client closed");
+                        }
+                    } catch (InterruptedException | IOException e) {
+                        e.getStackTrace();
                     }
-                    if(server.isNickBusy(nickName)){
-                        response = "/error" + MySimpleMulticlientServer.REGEX + "This client already connected";
-                    }
-                    if(!response.equals("")){
-                        send(response);
-                    } else {
-                        this.user = nickName;
-                        server.addAuthorizedClientToList(this);
-                        send("/auth_ok" + MySimpleMulticlientServer.REGEX + nickName);
-                        break;
+                }
+            }, 100000);
+            try {
+                while (true) {
+                    var message = in.readUTF();
+                    if (message.startsWith("/auth")) {
+                        var parsedAuthMessage = message.split(MySimpleMulticlientServer.REGEX);
+                        var response = "";
+                        String nickname = null;
+                        try {
+                            nickname = server.getAuthService().authorizeUserByLoginAndPassword(parsedAuthMessage[1], parsedAuthMessage[2]);
+                        } catch (WrongCredentialsException | SQLException e) {
+                            response = "/error" + MySimpleMulticlientServer.REGEX + e.getMessage();
+                            System.out.println("Wrong credentials, nick " + parsedAuthMessage[1]);
+                        }
+                        if (server.isNickBusy(nickname)) {
+                            response = "/error" + MySimpleMulticlientServer.REGEX + "this client already connected";
+                            System.out.println("Nick busy " + nickname);
+                        }
+                        if (!response.equals("")) {
+                            send(response);
+                        } else {
+                            this.user = nickname;
+                            server.addAuthorizedClientToList(this);
+                            send("/auth_ok" + MySimpleMulticlientServer.REGEX + nickname);
+                            break;
+                        }
                     }
                 }
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            if(Thread.currentThread().isAlive()) {
-                authThread.interrupt();
-                socket.close();
-                handlerThread.interrupt();
-                System.out.println("Time is delay... Client is disconnect...");
-                break;
-            }
-        }
     }
 
     public void send(String message) {

@@ -12,6 +12,7 @@ import ru.geekbrains.myChat.chat_server.myChat_Client.network.NetworkService;
 
 import java.io.IOException;
 import java.net.URL;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.ResourceBundle;
 
@@ -27,6 +28,8 @@ public class myChatClientController implements Initializable, MessageProcessor {
     @FXML
     public VBox loginPanel;
     @FXML
+    public VBox changeNickPanel;
+    @FXML
     public TextField loginField;
     @FXML
     public PasswordField passwordField;
@@ -38,6 +41,8 @@ public class myChatClientController implements Initializable, MessageProcessor {
     public ListView contactList;
     @FXML
     public TextField inputField;
+    @FXML
+    public TextField newNickField;
     @FXML
     public Button btnSend;
 
@@ -68,8 +73,6 @@ public class myChatClientController implements Initializable, MessageProcessor {
         }
 
         mainChatArea.setWrapText(true);
-//        if(currentContact != null)mainChatArea.appendText("To " + currentContact +": " + message + System.lineSeparator());
-//        else mainChatArea.appendText("To all: " + message + System.lineSeparator());
         currentContact = (String) contactList.getSelectionModel().getSelectedItem(); // Код от 03/02/22
         if(currentContact.equals("ALL")){
 //            mainChatArea.setStyle("-fx-font-size: 12px; -fx-highlight-fill: green; -fx-text-align: right");//Код от 03/02/22
@@ -93,19 +96,23 @@ public class myChatClientController implements Initializable, MessageProcessor {
 
     private void parseIncomingMessage(String message){
         var splitMessage = message.split(REGEX);
-        switch (splitMessage[0]){
-            case "/auth_ok" :
+        switch (splitMessage[0]) {
+            case "/auth_ok" -> {
                 this.nick = splitMessage[1];
                 loginPanel.setVisible(false);
                 mainChatPanel.setVisible(true);
-                break;
-            case "/broadcast" :
-                mainChatArea.appendText(splitMessage[1] + " to ALL> " + splitMessage[2] + System.lineSeparator());
-                break;
-            case "/error" :
+            }
+            case "/nick_ok" -> {
+                this.nick = splitMessage[1];
+                changeNickPanel.setVisible(false);
+                mainChatPanel.setVisible(true);
+            }
+            case "/broadcast" -> mainChatArea.appendText(splitMessage[1] + " to ALL> " + splitMessage[2] + System.lineSeparator());
+            case "/error" -> {
+                System.out.println("Got Error" + splitMessage[1]);
                 showError(splitMessage[1]);
-                break;
-            case "/list" :
+            }
+            case "/list" -> {
                 var contacts = new ArrayList<String>();
                 contacts.add("ALL");
                 for (int i = 1; i < splitMessage.length; i++) {
@@ -113,10 +120,8 @@ public class myChatClientController implements Initializable, MessageProcessor {
                 }
                 contactList.setItems(FXCollections.observableList(contacts));
                 contactList.getSelectionModel().selectFirst();
-                break;
-            case "/w" :
-                mainChatArea.appendText(splitMessage[1] + ">>> "+ splitMessage[2] + System.lineSeparator());
-                break;
+            }
+            case "/w" -> mainChatArea.appendText(splitMessage[1] + ">>> " + splitMessage[2] + System.lineSeparator());
         }
     }
 
@@ -144,5 +149,26 @@ public class myChatClientController implements Initializable, MessageProcessor {
             }
         }
         networkService.sendMessages(message);
+    }
+
+   public void confirmNick(ActionEvent actionEvent) {
+        var newNick = newNickField.getText();
+
+       var message = "/nick" + REGEX + newNick;
+
+       if(!networkService.isConnected()){
+           try {
+               networkService.connect();
+           } catch (IOException e) {
+               e.printStackTrace();
+               showError(e.getMessage());
+           }
+       }
+       networkService.sendMessages(message);
+    }
+
+    public void changeNickPanel(ActionEvent actionEvent) {
+        changeNickPanel.setVisible(true);
+        mainChatPanel.setVisible(false);
     }
 }

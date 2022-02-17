@@ -13,12 +13,17 @@
         <PasswordField fx:id="passwordField" />
         <Button text="Connect" onAction="#sendAuth"/>
     </VBox>
+    <VBox fx:id="changeNickPanel" maxHeight="100.0" maxWidth="100.0" visible="false">
+        <Label text="New Nick:" />
+        <TextField fx:id="newNickField" />
+        <Button text="Confirm" onAction="#confirmNick"/>
+    </VBox>
     <VBox fx:id="mainChatPanel" visible="false">
         <MenuBar>
             <Menu text="File">
                 <MenuItem onAction="#connectToServer" text="Connect" />
                 <MenuItem onAction="#disconnectFromServer" text="Disconnect" />
-                <MenuItem onAction="#mockAction" text="Item3" />
+                <MenuItem onAction="#changeNickPanel" text="ChangeNick" />
                 <MenuItem onAction="#mockAction" text="Item4" />
                 <MenuItem onAction="#mockAction" text="Item5" />
                 <MenuItem onAction="#exit" text="Exit" />

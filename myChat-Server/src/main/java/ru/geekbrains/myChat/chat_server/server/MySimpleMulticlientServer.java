@@ -6,6 +6,10 @@ import ru.geekbrains.myChat.chat_server.auth.InMemoryAuthService;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,6 +19,12 @@ public class MySimpleMulticlientServer {
     private static final int PORT = 8181;
     private AuthService authService;
     private List<ClientHandler> clientHandlers;
+    public static final String DB_CONNECTION_STRING = "jdbc:sqlite:db/users.db";
+    private static final String CREATE_REQUEST = "create table if not exists users" +
+            "(id integer primary key autoincrement, login text, pass text, nick text, secret text);";
+    private static final String INSERT_REQUEST = "insert into users (login, pass, nick, secret) values ('log1', 'pass', 'Nick1', 'secret'), ('log2', 'pass', 'Nick2', 'secret'), ('log3', 'pass', 'Nick3', 'secret')";
+    private static Connection connection;
+    private static Statement statement;
 
     public MySimpleMulticlientServer(AuthService authService){
 
@@ -26,7 +36,13 @@ public class MySimpleMulticlientServer {
 
         try(ServerSocket serverSocket = new ServerSocket(PORT)) {
             System.out.println("Server started.");
-
+            try {
+                connectToDB();                  //Подключение к базе данных
+                createTableOfUsers();           //Создание таблицы пользователей
+                initializeTableOfUsers();       //Инициализация таблицы пользователей
+            } catch (SQLException e){
+                e.printStackTrace();
+            }
             while (true){
                 System.out.println("Waiting for connection ...");
                 Socket socket = serverSocket.accept();
@@ -40,6 +56,19 @@ public class MySimpleMulticlientServer {
             authService.stop();
             shutdown();
         }
+    }
+
+    private static void connectToDB() throws SQLException {
+        connection = DriverManager.getConnection(DB_CONNECTION_STRING);
+        statement = connection.createStatement();
+    }
+
+    private static void createTableOfUsers() throws SQLException{
+        statement.execute(CREATE_REQUEST);
+    }
+
+    private static void initializeTableOfUsers() throws SQLException{
+        statement.executeUpdate(INSERT_REQUEST);
     }
 
     public void privateMessage(String from, String message){
@@ -73,6 +102,12 @@ public class MySimpleMulticlientServer {
         sendOnlineClients();
     }
 
+    public void setAuthorizedClientToList(ClientHandler clientHandler) {
+        var num = clientHandlers.indexOf(clientHandler);
+        clientHandlers.set(num, clientHandler);
+        sendOnlineClients();
+    }
+
     public synchronized void removeAuthorizedClientToList(ClientHandler clientHandler){
         clientHandlers.remove(clientHandler);
         sendOnlineClients();
@@ -103,4 +138,5 @@ public class MySimpleMulticlientServer {
     public AuthService getAuthService() {
         return authService;
     }
+
 }
