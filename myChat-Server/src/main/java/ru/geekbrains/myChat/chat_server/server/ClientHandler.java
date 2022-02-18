@@ -69,6 +69,12 @@ public class ClientHandler {
                 server.setAuthorizedClientToList(this);
                 send("/nick_ok" + MySimpleMulticlientServer.REGEX + splitMessage[1]);
                 break;
+            case "/exit":
+                try {
+                    handlerThread.interrupt();
+                }catch (RuntimeException e){
+                    e.printStackTrace();
+                }
         }
     }
 

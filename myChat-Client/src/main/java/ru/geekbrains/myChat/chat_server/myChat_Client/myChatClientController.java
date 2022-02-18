@@ -56,7 +56,17 @@ public class myChatClientController implements Initializable, MessageProcessor {
     public void mockAction(ActionEvent actionEvent) {
     }
 
-    public void exit(ActionEvent actionEvent) {
+    public void exit(ActionEvent actionEvent) throws IOException {
+        var message = "/exit";
+        networkService.sendMessages(message);
+        if(!networkService.isConnected()){
+            try {
+                networkService.disConnect();
+            } catch (IOException e) {
+                e.printStackTrace();
+                showError(e.getMessage());
+            }
+        }
         System.exit(1);
     }
 
@@ -103,7 +113,7 @@ public class myChatClientController implements Initializable, MessageProcessor {
                 mainChatPanel.setVisible(true);
             }
             case "/nick_ok" -> {
-                this.nick = splitMessage[1];
+                if(splitMessage[1] != "")this.nick = splitMessage[1];
                 changeNickPanel.setVisible(false);
                 mainChatPanel.setVisible(true);
             }
@@ -153,6 +163,11 @@ public class myChatClientController implements Initializable, MessageProcessor {
 
    public void confirmNick(ActionEvent actionEvent) {
         var newNick = newNickField.getText();
+        if(newNick == ""){
+            changeNickPanel.setVisible(false);
+            mainChatPanel.setVisible(true);
+            return;
+        }
 
        var message = "/nick" + REGEX + newNick;
 

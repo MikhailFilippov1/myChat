@@ -25,6 +25,13 @@ public class NetworkService {
         readMessages();
     }
 
+    public void disConnect() throws IOException {
+        this.socket.close();
+        this.out.close();
+        this.in.close();
+        this.close();
+    }
+
     public void readMessages(){
         Thread thread = new Thread(() -> {
             try {

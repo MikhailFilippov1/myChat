@@ -39,6 +39,7 @@ public class fromDBAuthService implements AuthService{
 
     @Override
     public void changeNick(String oldNick, String newNick) throws SQLException {
+        if(newNick == "")return;
         connection = DriverManager.getConnection(DB_CONNECTION_STRING);
         statement = connection.createStatement();
         var UPDATE_REQUEST = "update users set nick = '" + newNick +"' WHERE nick = '" + oldNick + "'";
