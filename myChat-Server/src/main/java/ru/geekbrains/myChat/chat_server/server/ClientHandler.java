@@ -4,6 +4,7 @@ import ru.geekbrains.myChat.chat_server.error.WrongCredentialsException;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.net.Socket;
 import java.sql.SQLException;
@@ -117,6 +118,8 @@ public class ClientHandler {
                             send(response);
                         } else {
                             this.user = nickname;
+                            File file = new File("chat_repository/" + nickname + "_history.txt");
+                            if(!file.exists())file.createNewFile();
                             server.addAuthorizedClientToList(this);
                             send("/auth_ok" + MySimpleMulticlientServer.REGEX + nickname);
                             break;

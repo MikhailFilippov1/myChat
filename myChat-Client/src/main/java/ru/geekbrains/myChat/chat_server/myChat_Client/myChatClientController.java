@@ -10,7 +10,7 @@ import javafx.scene.layout.VBox;
 import ru.geekbrains.myChat.chat_server.myChat_Client.network.MessageProcessor;
 import ru.geekbrains.myChat.chat_server.myChat_Client.network.NetworkService;
 
-import java.io.IOException;
+import java.io.*;
 import java.net.URL;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -109,15 +109,16 @@ public class myChatClientController implements Initializable, MessageProcessor {
         switch (splitMessage[0]) {
             case "/auth_ok" -> {
                 this.nick = splitMessage[1];
+                reestablishChatToScreen();              // Восстанавливаем предыдущие сообщения в чате
                 loginPanel.setVisible(false);
                 mainChatPanel.setVisible(true);
             }
             case "/nick_ok" -> {
+                renameChatHistoryFile(splitMessage[1]);
                 if(splitMessage[1] != "")this.nick = splitMessage[1];
                 changeNickPanel.setVisible(false);
                 mainChatPanel.setVisible(true);
             }
-            case "/broadcast" -> mainChatArea.appendText(splitMessage[1] + " to ALL> " + splitMessage[2] + System.lineSeparator());
             case "/error" -> {
                 System.out.println("Got Error" + splitMessage[1]);
                 showError(splitMessage[1]);
@@ -131,7 +132,16 @@ public class myChatClientController implements Initializable, MessageProcessor {
                 contactList.setItems(FXCollections.observableList(contacts));
                 contactList.getSelectionModel().selectFirst();
             }
-            case "/w" -> mainChatArea.appendText(splitMessage[1] + ">>> " + splitMessage[2] + System.lineSeparator());
+            case "/w" -> {
+                mainChatArea.appendText(splitMessage[1] + " to [" + contactList.getSelectionModel().getSelectedItem() + "]> "
+                        + splitMessage[2] + System.lineSeparator());
+                sendToRepository(splitMessage[1] + " to [" + contactList.getSelectionModel().getSelectedItem() + "]> "
+                        + splitMessage[2] + System.lineSeparator());
+            }
+            case "/broadcast" -> {
+                mainChatArea.appendText(splitMessage[1] + " to ALL> " + splitMessage[2] + System.lineSeparator());
+                sendToRepository(splitMessage[1] + " to ALL> " + splitMessage[2] + System.lineSeparator());
+            }
         }
     }
 
@@ -185,5 +195,67 @@ public class myChatClientController implements Initializable, MessageProcessor {
     public void changeNickPanel(ActionEvent actionEvent) {
         changeNickPanel.setVisible(true);
         mainChatPanel.setVisible(false);
+    }
+
+    public void sendToRepository(String message){
+        try (var os = new FileOutputStream(new File("chat_repository/" + nick + "_history.txt"), true);){
+            os.write(message.getBytes(), 0, message.length());
+        } catch (IOException e){
+            e.printStackTrace();
+        }
+    }
+
+    public void reestablishChatToScreen(){
+        File file = new File("chat_repository/" + nick + "_history.txt");
+        var lines = 0L;
+        var numberOfLines = 100L;                // Количество строк прошлых сообщений к выводу на панель
+        try (var reader = new BufferedReader(new FileReader(file))) {
+            while (reader.readLine() != null) {
+                lines++;                        // Определяем общее количество строк в предыдущих сообщениях
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        try (var reader = new BufferedReader(new FileReader(file))) {
+            var s = "";
+            while ((s = reader.readLine()) != null) {
+                if(lines >= (lines - numberOfLines))
+                    mainChatArea.appendText(s + System.lineSeparator());
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void renameChatHistoryFile(String message){
+        File old_file = new File("chat_repository/" + nick + "_history.txt");
+        File new_file = new File("chat_repository/" + message + "_history.txt");
+
+        try{
+            if(!new_file.exists())new_file.createNewFile();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        InputStream input = null;
+        OutputStream output = null;
+        try {
+            input = new FileInputStream(old_file);
+            output = new FileOutputStream(new_file);
+            byte[] buf = new byte[1024];
+            int bytesRead;
+            while ((bytesRead = input.read(buf)) > 0) {
+                output.write(buf, 0, bytesRead);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (output != null) {output.close(); }
+                if (input != null) { input.close();  }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        old_file.delete();
     }
 }
