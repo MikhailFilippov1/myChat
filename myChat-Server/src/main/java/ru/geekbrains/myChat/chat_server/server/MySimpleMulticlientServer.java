@@ -12,6 +12,8 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class MySimpleMulticlientServer {
 
@@ -34,12 +36,14 @@ public class MySimpleMulticlientServer {
 
     public void start() {
 
+        ExecutorService cachedService = Executors.newCachedThreadPool();
+
         try(ServerSocket serverSocket = new ServerSocket(PORT)) {
             System.out.println("Server started.");
             try {
                 connectToDB();                  //Подключение к базе данных
-                createTableOfUsers();           //Создание таблицы пользователей
-                initializeTableOfUsers();       //Инициализация таблицы пользователей
+//              createTableOfUsers();           //Создание таблицы пользователей
+//              initializeTableOfUsers();       //Инициализация таблицы пользователей
             } catch (SQLException e){
                 e.printStackTrace();
             }
@@ -48,13 +52,13 @@ public class MySimpleMulticlientServer {
                 Socket socket = serverSocket.accept();
                 System.out.printf("Client connecting.");
                 ClientHandler clientHandler = new ClientHandler(socket, this);
-                clientHandler.handlerMethod();
-                }
+                cachedService.execute(clientHandler::handlerMethod);
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }finally {
             authService.stop();
-            shutdown();
+            cachedService.shutdown();
         }
     }
 
