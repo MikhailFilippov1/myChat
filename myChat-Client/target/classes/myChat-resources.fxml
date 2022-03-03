@@ -2,23 +2,55 @@
 
 <?import javafx.geometry.*?>
 <?import javafx.scene.control.*?>
+<?import javafx.scene.effect.*?>
 <?import javafx.scene.layout.*?>
 
-<AnchorPane prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/11.0.2" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ru.geekbrains.myChat.chat_server.myChat_Client.myChatClientController">
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" prefHeight="546.0" prefWidth="618.0" xmlns="http://javafx.com/javafx/11.0.2" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ru.geekbrains.myChat.chat_server.myChat_Client.myChatClientController">
 
-    <VBox fx:id="loginPanel" maxHeight="100.0" maxWidth="100.0">
+    <VBox fx:id="loginPanel" alignment="CENTER" layoutX="197.0" layoutY="185.0" maxHeight="183.0" maxWidth="224.0" prefHeight="100.0" prefWidth="224.0">
         <Label text="Login:" />
-        <TextField fx:id="loginField" />
+        <TextField fx:id="loginField" alignment="CENTER" prefHeight="48.0" prefWidth="100.0" />
         <Label text="Password:" />
-        <PasswordField fx:id="passwordField" />
-        <Button text="Connect" onAction="#sendAuth"/>
+        <PasswordField fx:id="passwordField" alignment="CENTER" />
+      <ButtonBar prefHeight="40.0" prefWidth="200.0">
+          <buttons>
+              <Button layoutX="100.0" layoutY="285.0" onAction="#newUserPanel" prefHeight="26.0" prefWidth="70.0" text="New User" />
+              <Button layoutX="170.0" layoutY="285.0" onAction="#sendAuth" prefHeight="26.0" prefWidth="70.0" text="Connect" />
+          </buttons>
+         <VBox.margin>
+            <Insets top="15.0" />
+         </VBox.margin>
+      </ButtonBar>
+
     </VBox>
-    <VBox fx:id="changeNickPanel" maxHeight="100.0" maxWidth="100.0" visible="false">
-        <Label text="New Nick:" />
-        <TextField fx:id="newNickField" />
-        <Button text="Confirm" onAction="#confirmNick"/>
+    <VBox fx:id="newUserPanel" alignment="CENTER" layoutX="197.0" layoutY="185.0" maxHeight="283.0" maxWidth="224.0" prefHeight="100.0" prefWidth="224.0" visible="false">
+        <Label text="Login:" />
+        <TextField fx:id="newLoginField" alignment="CENTER" prefHeight="48.0" prefWidth="100.0" />
+        <Label text="NickName:" />
+        <TextField fx:id="newNicknameField" alignment="CENTER" prefHeight="48.0" prefWidth="100.0" />
+        <Label text="Password:" />
+        <PasswordField fx:id="newPasswordField" alignment="CENTER" />
+        <Label text="Confirm Password:" />
+        <PasswordField fx:id="confirmNewPasswordField" alignment="CENTER" />
+        <ButtonBar prefHeight="40.0" prefWidth="200.0">
+            <buttons>
+                <Button layoutX="100.0" layoutY="285.0" onAction="#newUserPanelCancel" prefHeight="26.0" prefWidth="70.0" text="Cancel" />
+                <Button layoutX="170.0" layoutY="285.0" onAction="#createNewUser" prefHeight="26.0" prefWidth="70.0" text="Create" />
+            </buttons>
+            <VBox.margin>
+                <Insets top="15.0" />
+            </VBox.margin>
+        </ButtonBar>
     </VBox>
-    <VBox fx:id="mainChatPanel" visible="false">
+    <VBox fx:id="changeNickPanel" alignment="CENTER" maxHeight="100.0" maxWidth="100.0" visible="false" AnchorPane.bottomAnchor="426.4" AnchorPane.leftAnchor="200.0" AnchorPane.rightAnchor="200.0" AnchorPane.topAnchor="150.0">
+        <Label alignment="CENTER" prefHeight="47.0" prefWidth="70.0" text="New Nick:" textAlignment="CENTER" />
+        <TextField fx:id="newNickField" alignment="CENTER" />
+        <Button alignment="CENTER" contentDisplay="CENTER" onAction="#confirmNick" text="Confirm" textAlignment="CENTER">
+         <VBox.margin>
+            <Insets top="15.0" />
+         </VBox.margin></Button>
+    </VBox>
+    <VBox fx:id="mainChatPanel" prefHeight="536.0" prefWidth="618.0" visible="false">
         <MenuBar>
             <Menu text="File">
                 <MenuItem onAction="#connectToServer" text="Connect" />
@@ -47,8 +79,8 @@
                 <MenuItem onAction="#showAbout" text="About" />
             </Menu>
         </MenuBar>
-        <HBox VBox.vgrow="ALWAYS">
-            <TextArea fx:id="mainChatArea" editable="false" prefHeight="400.0" prefWidth="463.0" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+        <HBox prefHeight="481.0" prefWidth="618.0" VBox.vgrow="ALWAYS">
+            <TextArea fx:id="mainChatArea" editable="false" prefHeight="520.0" prefWidth="463.0" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
                 <HBox.margin>
                     <Insets left="5.0" right="5.0" />
                 </HBox.margin>
@@ -56,16 +88,24 @@
             <ListView fx:id="contactList" minWidth="125.0" prefHeight="400.0" prefWidth="145.0">
             </ListView>
         </HBox>
-        <HBox VBox.vgrow="ALWAYS">
-            <TextField fx:id="inputField" onAction="#sendMessage" prefHeight="70.0" prefWidth="463.0" HBox.hgrow="ALWAYS">
+        <HBox prefHeight="55.0" prefWidth="618.0" VBox.vgrow="ALWAYS">
+            <TextField fx:id="inputField" alignment="TOP_LEFT" onAction="#sendMessage" prefHeight="70.0" prefWidth="429.0" HBox.hgrow="ALWAYS">
                 <HBox.margin>
                     <Insets left="5.0" right="5.0" />
                 </HBox.margin>
             </TextField>
-            <Button fx:id="btnSend" minWidth="125.0" onAction="#sendMessage" prefHeight="70.0" text="SEND">
+            <Button fx:id="btnSend" minWidth="125.0" onAction="#sendMessage" prefHeight="54.0" prefWidth="139.0" text="SEND">
 
             </Button>
         </HBox>
     </VBox>
+
+   <effect>
+      <Glow>
+         <input>
+            <InnerShadow />
+         </input>
+      </Glow>
+   </effect>
 
 </AnchorPane>
