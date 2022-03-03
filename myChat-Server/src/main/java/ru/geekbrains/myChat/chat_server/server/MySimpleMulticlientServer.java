@@ -1,5 +1,7 @@
 package ru.geekbrains.myChat.chat_server.server;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import ru.geekbrains.myChat.chat_server.auth.AuthService;
 import ru.geekbrains.myChat.chat_server.auth.InMemoryAuthService;
 
@@ -27,6 +29,7 @@ public class MySimpleMulticlientServer {
     private static final String INSERT_REQUEST = "insert into users (login, pass, nick, secret) values ('log1', 'pass', 'Nick1', 'secret'), ('log2', 'pass', 'Nick2', 'secret'), ('log3', 'pass', 'Nick3', 'secret')";
     private static Connection connection;
     private static Statement statement;
+    private static final Logger log = LogManager.getLogger();
 
     public MySimpleMulticlientServer(AuthService authService){
 
@@ -39,7 +42,8 @@ public class MySimpleMulticlientServer {
         ExecutorService cachedService = Executors.newCachedThreadPool();
 
         try(ServerSocket serverSocket = new ServerSocket(PORT)) {
-            System.out.println("Server started.");
+//            System.out.println("Server started.");
+            log.info("Server started.");
             try {
                 connectToDB();                  //Подключение к базе данных
 //              createTableOfUsers();           //Создание таблицы пользователей
@@ -48,11 +52,14 @@ public class MySimpleMulticlientServer {
                 e.printStackTrace();
             }
             while (true){
-                System.out.println("Waiting for connection ...");
+//                System.out.println("Waiting for connection ...");
+                log.info("Waiting for connection ...");
                 Socket socket = serverSocket.accept();
-                System.out.printf("Client connecting.");
+//                System.out.printf("Client connecting.");
+                log.info("Client connecting.");
                 ClientHandler clientHandler = new ClientHandler(socket, this);
                 cachedService.execute(clientHandler::handlerMethod);
+                clientHandler.handlerMethod();
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -78,6 +85,7 @@ public class MySimpleMulticlientServer {
     public void privateMessage(String from, String message){
         var splitMessage = message.split(REGEX);            // Код от 03.02.2022
         var mess = "/w" + REGEX + from + REGEX + splitMessage[1];            // Код от 03.02.2022
+        log.warn(message);
         for (ClientHandler clientHandler : clientHandlers) {        // Код от 03.02.2022
             if(clientHandler.getUserNick().equals(splitMessage[0])) { // Код от 03.02.2022
                 clientHandler.send(mess);                               // Код от 03.02.2022
@@ -92,6 +100,7 @@ public class MySimpleMulticlientServer {
 
     public void broadcastMessage(String from, String message) {
         message = "/broadcast" + REGEX + from + REGEX + message;
+        log.warn(message);
         for (ClientHandler clientHandler : clientHandlers) {
             clientHandler.send(message);
         }

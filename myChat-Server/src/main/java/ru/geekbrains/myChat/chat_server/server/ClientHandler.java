@@ -1,5 +1,7 @@
 package ru.geekbrains.myChat.chat_server.server;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import ru.geekbrains.myChat.chat_server.error.WrongCredentialsException;
 
 import java.io.DataInputStream;
@@ -19,6 +21,7 @@ public class ClientHandler {
     private Thread handlerThread;
     private MySimpleMulticlientServer server;
     private String user;
+    private static final Logger log = LogManager.getLogger(ClientHandler.class);
 
     public ClientHandler(Socket socket, MySimpleMulticlientServer server) {
         try {
@@ -26,7 +29,8 @@ public class ClientHandler {
             this.socket = socket;
             this.in = new DataInputStream(socket.getInputStream());
             this.out = new DataOutputStream(socket.getOutputStream());
-            System.out.println("Handler created");
+            log.trace("Handler created");
+//            System.out.println("Handler created");
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -72,6 +76,7 @@ public class ClientHandler {
                 break;
             case "/exit":
                 try {
+                    server.removeAuthorizedClientToList(this);
                     handlerThread.interrupt();
                 }catch (RuntimeException e){
                     e.printStackTrace();
@@ -124,6 +129,19 @@ public class ClientHandler {
                             send("/auth_ok" + MySimpleMulticlientServer.REGEX + nickname);
                             break;
                         }
+                    }else if(message.startsWith("/newUser")){
+                        var parsedAuthMessage = message.split(MySimpleMulticlientServer.REGEX);
+                            try {
+                                server.getAuthService().createNewUserInDB(parsedAuthMessage[1], parsedAuthMessage[2], parsedAuthMessage[3]);
+                            } catch (WrongCredentialsException | SQLException e) {
+                                e.printStackTrace();
+                            }
+                            this.user = parsedAuthMessage[3];
+                        File file = new File("chat_repository/" + parsedAuthMessage[3] + "_history.txt");
+                        if(!file.exists())file.createNewFile();
+                            server.addAuthorizedClientToList(this);
+                            send("/newUser_ok" + MySimpleMulticlientServer.REGEX + parsedAuthMessage[3]);
+                            break;
                     }
                 }
             } catch (IOException e) {
